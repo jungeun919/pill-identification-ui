@@ -3,6 +3,7 @@ import "./App.css";
 import React, { useState, useEffect, useRef, CSSProperties } from "react";
 import axios from "axios";
 import { css } from "@emotion/react";
+import { useNavigate } from "react-router-dom";
 
 const tempList = Array.from({ length: 20 }).map((_, i) => {
   const index = i + 1;
@@ -38,6 +39,8 @@ function WebcamPage() {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     let intervalId: any;
@@ -112,8 +115,8 @@ function WebcamPage() {
   }, []);
 
   const onClickMore = (data: any) => {
-    // localStorage.set("", JSON.stringify());
-    alert("넘어감");
+    window.sessionStorage.setItem("data", JSON.stringify(data));
+    navigate("/medicine/detail");
   };
 
   return (
@@ -203,5 +206,18 @@ const lineOverflowStyle: CSSProperties = {
   WebkitLineClamp: 1,
   WebkitBoxOrient: "vertical",
   overflow: "hidden",
+};
+
+export type MedicineType = {
+  id: number;
+  product_name: string;
+  manufacturer_name: string;
+  appearance: string;
+  length: string;
+  width: string;
+  thickness: string;
+  category_name: string;
+  specialized_general_name: string;
+  dosage_form_name: string;
 };
 export default WebcamPage;

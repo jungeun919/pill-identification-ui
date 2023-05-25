@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
+import { MedicineType } from "./WebcamPage";
 
 const MedicineDetailPage = () => {
   // 더미 데이터
@@ -13,22 +14,12 @@ const MedicineDetailPage = () => {
   const specialized_general_name = "dummy_specialized_general_name1";
   const dosage_form_name = "dummy_dosage_form_name1";
 
-  const [medicine, setMedicine] = useState(null);
+  const [medicine, setMedicine] = useState<MedicineType | null>(null);
 
-  // useEffect(() => {
-  //   const fetchMedicine = async () => {
-  //     try {
-  //       const response = await axios.get(`/medicine/${medicine.id}`);
-  //       setMedicine(response.data);
-  //     } catch (error) {
-  //       console.error(error);
-  //     }
-  //   };
-
-  //   if (medicine && medicine.id) {
-  //     fetchMedicine();
-  //   }
-  // }, [medicine.id]);
+  useEffect(() => {
+    const medicineData = window.sessionStorage.getItem("data");
+    if (medicineData) setMedicine(JSON.parse(medicineData));
+  }, []);
 
   if (!medicine) {
     return <div>Loading...</div>;
@@ -37,15 +28,15 @@ const MedicineDetailPage = () => {
   return (
     <div>
       <h1>Medicine Details</h1>
-      <h2>{product_name}</h2>
-      <p>Manufacturer: {manufacturer_name}</p>
-      <p>Appearance: {appearance}</p>
-      <p>Length: {length}</p>
-      <p>Width: {width}</p>
-      <p>Thickness: {thickness}</p>
-      <p>Category: {category_name}</p>
-      <p>Specialized General: {specialized_general_name}</p>
-      <p>Dosage Form: {dosage_form_name}</p>
+      <h2>{medicine.product_name}</h2>
+      <p>Manufacturer: {medicine.manufacturer_name}</p>
+      <p>Appearance: {medicine.appearance}</p>
+      <p>Length: {medicine.length}</p>
+      <p>Width: {medicine.width}</p>
+      <p>Thickness: {medicine.thickness}</p>
+      <p>Category: {medicine.category_name}</p>
+      <p>Specialized General: {medicine.specialized_general_name}</p>
+      <p>Dosage Form: {medicine.dosage_form_name}</p>
     </div>
   );
 };
