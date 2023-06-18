@@ -3,37 +3,13 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
 
-const tempList = Array.from({ length: 20 }).map((_, i) => {
-  const index = i + 1;
-  return {
-    id: index,
-    product_name: "product_name-" + index,
-    manufacturer_name: "manufacturer_name-" + index,
-    appearance: "appearance-" + index,
-    length: "length-" + index,
-    width: "width-" + index,
-    thickness: "thickness-" + index,
-    category_name: "category_name-" + index,
-    specialized_general_name: "specialized_general_name-" + index,
-    dosage_form_name: "dosage_form_name-" + index,
-  };
-});
-
-const tempMedicine = {
-  id: "200808876",
-  product_name: "가스디알정50밀리그램(디메크로틴산마그네슘)",
-  manufacturer_name: "일동제약(주)",
-  appearance: "녹색의 원형 필름코팅정",
-  length: "7.6",
-  width: "7.6",
-  thickness: "3.6",
-  category_name: "기타의 소화기관용약",
-  specialized_general_name: "전문의약품",
-  dosage_form_name: "당의정",
-};
+let intervalId: any;
+let isPlay = false;
+let tempIndex = 0;
 
 function WebcamPage() {
-  const [medicines, setMedicines] = useState([tempMedicine, ...tempList]);
+  // const [medicines, setMedicines] = useState([tempMedicine, ...tempList]);
+  const [medicines, setMedicines] = useState<MedicineType[]>([]);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -41,39 +17,26 @@ function WebcamPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    let intervalId: any;
-
+    document.body.style.overflow = "hidden";
     const startCapture = () => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      console.log(123, video, canvas);
-
       if (!video || !canvas) return;
-      console.log(1234);
-
       const context = canvas.getContext("2d");
-
       if (!context) return;
-
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
       const imageDataUrl = canvas.toDataURL("image/png");
-
       const dataUrlToBlob = (dataUrl: string) => {
         const arr = dataUrl.split(",");
         const mime = arr[0].match(/:(.*?);/);
         const bstr = atob(arr[1]);
         let n = bstr.length;
         const u8arr = new Uint8Array(n);
-        while (n--) {
-          u8arr[n] = bstr.charCodeAt(n);
-        }
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
         return new Blob([u8arr], { type: mime ? mime[1] : "png" });
       };
-
       const imageDataBlob = dataUrlToBlob(imageDataUrl);
       const formData = new FormData();
       formData.append("frame", imageDataBlob, "capture.png");
@@ -85,20 +48,27 @@ function WebcamPage() {
         .post(`http://10.100.154.24:3636/test`, formData)
         .then((res) => {
           console.log(res.data);
-          if (res && res.data && !res.data.color_preds) setMedicines((r) => [...res.data, ...r]);
+          if (res && res.data && !res.data.color_preds)
+            setMedicines((r) => checkList([...getMedicineList(res.data), ...r]));
         })
-        .catch((e) => console.error("접근 에러", e));
+        .catch((e) => {
+          console.error("접근 에러", e);
+          const data = getTempMedicineList(tempIndex);
+          tempIndex++;
+          setMedicines((r) => checkList([data, ...r]));
+        });
       // #endregion
     };
 
     const startInterval = () => {
-      startCapture(); // 캡쳐 및 전송
       intervalId = setInterval(() => {
+        console.log("call");
         startCapture();
       }, 5000); // 5초마다 캡쳐 및 전송
     };
 
-    if (navigator && navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
+    if (navigator && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && !isPlay) {
+      isPlay = true;
       navigator.mediaDevices
         .getUserMedia({ video: true })
         .then((stream) => {
@@ -106,27 +76,21 @@ function WebcamPage() {
           videoRef.current.srcObject = stream;
           videoRef.current
             .play()
-            .then(() => {
-              startInterval();
-            })
-            .catch((error) => {
-              console.error("Error playing video:", error);
-            });
+            .then(() => startInterval())
+            .catch((error) => console.error("Error playing video:", error));
         })
-        .catch((error) => {
-          console.error("Error accessing webcam:", error);
-        });
+        .catch((error) => console.error("Error accessing webcam:", error));
+    }
 
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [navigator]);
+    return () => clearInterval(intervalId);
+  }, []);
 
   const onClickMore = (data: any) => {
     window.sessionStorage.setItem("data", JSON.stringify(data));
     navigate("/medicine/detail");
   };
 
+  console.log(medicines);
   return (
     <div>
       {/* <h1>Medicine List</h1> */}
@@ -137,7 +101,18 @@ function WebcamPage() {
         {/* </div> */}
         <div>
           {/* <h2>5초마다 캡쳐 화면</h2> */}
-          <canvas ref={canvasRef} style={{ zIndex: -1, position: "absolute", opacity: 0, pointerEvents: "none" }} />
+          <canvas
+            ref={canvasRef}
+            style={{
+              zIndex: -1,
+              position: "absolute",
+              opacity: 0,
+              pointerEvents: "none",
+              top: 0,
+              left: 0,
+              width: "100vw",
+            }}
+          />
         </div>
       </div>
       <div
@@ -153,7 +128,7 @@ function WebcamPage() {
           padding: "0 10px",
         }}
       >
-        {medicines.map((medicine) => (
+        {medicines.map((medicine, i) => (
           <div
             key={medicine.id}
             style={{
@@ -163,20 +138,31 @@ function WebcamPage() {
               width: 200,
               cursor: "pointer",
               padding: 2,
+              opacity: i > 2 ? 0 : 1,
+              transition: "opacity 1s ease-out",
             }}
             onClick={() => onClickMore(medicine)}
           >
             {/* <div>색깔/일련번호/앞면뒷면글자</div> */}
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%" }}>
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <img
-                  src="https://picsum.photos/200/300"
-                  width="60"
-                  height="50"
-                  alt="알약이미지"
-                  style={{ borderRadius: 2 }}
-                />
-              </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                height: "100%",
+              }}
+            >
+              {medicine.product_image && (
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <img
+                    src={medicine.product_image}
+                    width="60"
+                    height="50"
+                    alt="알약이미지"
+                    style={{ borderRadius: 2 }}
+                  />
+                </div>
+              )}
               <div style={{ gap: 2, display: "flex", flexDirection: "column" }}>
                 <div style={lineOverflowStyle}>의약품명: {medicine.product_name}</div>
                 <div style={lineOverflowStyle}>제조사: {medicine.manufacturer_name}</div>
@@ -208,6 +194,64 @@ function WebcamPage() {
   );
 }
 
+const tempMedicineList = [
+  {
+    id: "200808876",
+    product_name: "가스디알정50밀리그램(디메크로틴산마그네슘)",
+    manufacturer_name: "일동제약(주)",
+    appearance: "녹색의 원형 필름코팅정",
+    length: "7.6",
+    width: "7.6",
+    thickness: "3.6",
+    category_name: "기타의 소화기관용약",
+    specialized_general_name: "전문의약품",
+    dosage_form_name: "당의정",
+    product_image: "https://nedrug.mfds.go.kr/pbp/cmn/itemImageDownload/147426403087300104",
+  },
+  {
+    id: "200808877",
+    product_name: "페라트라정2.5밀리그램(레트로졸)",
+    manufacturer_name: "(주)유한양행",
+    appearance: "어두운 황색의 원형 필름코팅정",
+    length: "6.1",
+    width: "6.1",
+    thickness: "3.5",
+    category_name: "항악성종양제",
+    specialized_general_name: "전문의약품",
+    dosage_form_name: "필름코팅정",
+    product_image: "https://nedrug.mfds.go.kr/pbp/cmn/itemImageDownload/147426403087300107",
+  },
+  {
+    id: "200811004",
+    product_name: "슈니펜정(모니플루메이트)",
+    manufacturer_name: "안국약품(주)",
+    appearance: "크림색의 장방형 정제",
+    length: "14.2",
+    width: "7.2",
+    thickness: "5.2",
+    category_name: "해열.진통.소염제",
+    specialized_general_name: "전문의약품",
+    dosage_form_name: "나정",
+    product_image: "https://nedrug.mfds.go.kr/pbp/cmn/itemImageDownload/147426407360700065",
+  },
+];
+
+const getTempMedicineList = (index: number): MedicineType => {
+  return { ...tempMedicineList[index % tempMedicineList.length], is_hide: 4 };
+};
+const getMedicineList = (list: any[]): MedicineType[] => {
+  return list.map((s) => {
+    return { ...s, is_hide: 4 };
+  });
+};
+
+const checkList = (list: MedicineType[]) => {
+  return list
+    .map((s) => {
+      return { ...s, is_hide: s.is_hide - 1 };
+    })
+    .filter((s) => s.is_hide >= 0);
+};
 const lineOverflowStyle: CSSProperties = {
   whiteSpace: "normal",
   display: "-webkit-box",
@@ -217,7 +261,7 @@ const lineOverflowStyle: CSSProperties = {
 };
 
 export type MedicineType = {
-  id: number;
+  id: string;
   product_name: string;
   manufacturer_name: string;
   appearance: string;
@@ -227,6 +271,8 @@ export type MedicineType = {
   category_name: string;
   specialized_general_name: string;
   dosage_form_name: string;
+  product_image: string | null;
+  is_hide: number; //3이면 서버요청 3회동안 남아있음. -1이면 삭제되고 0 이면 리스트에서 차츰사라짐
 };
 
 const SHAPE_SCORE_LIST = {
