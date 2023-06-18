@@ -138,8 +138,8 @@ function WebcamPage() {
               width: 200,
               cursor: "pointer",
               padding: 2,
-              opacity: i > 2 ? 0 : 1,
-              transition: "opacity 1s ease-out",
+              // opacity: i > 2 ? 0 : 1,
+              // transition: "opacity 1s ease-out",
             }}
             onClick={() => onClickMore(medicine)}
           >
