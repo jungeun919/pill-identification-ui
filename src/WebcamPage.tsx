@@ -91,23 +91,24 @@ function WebcamPage() {
       }, 5000); // 5초마다 캡쳐 및 전송
     };
 
-    navigator.mediaDevices
-      .getUserMedia({ video: true })
-      .then((stream) => {
-        if (!videoRef.current) return;
-        videoRef.current.srcObject = stream;
-        videoRef.current
-          .play()
-          .then(() => {
-            startInterval();
-          })
-          .catch((error) => {
-            console.error("Error playing video:", error);
-          });
-      })
-      .catch((error) => {
-        console.error("Error accessing webcam:", error);
-      });
+    if (navigator && navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((stream) => {
+          if (!videoRef.current) return;
+          videoRef.current.srcObject = stream;
+          videoRef.current
+            .play()
+            .then(() => {
+              startInterval();
+            })
+            .catch((error) => {
+              console.error("Error playing video:", error);
+            });
+        })
+        .catch((error) => {
+          console.error("Error accessing webcam:", error);
+        });
 
     return () => {
       clearInterval(intervalId);
