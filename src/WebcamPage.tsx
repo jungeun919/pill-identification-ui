@@ -48,8 +48,10 @@ function WebcamPage() {
     const startCapture = () => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
+      console.log(123);
 
       if (!video || !canvas) return;
+      console.log(1234);
 
       const context = canvas.getContext("2d");
 
@@ -62,25 +64,40 @@ function WebcamPage() {
 
       const imageDataUrl = canvas.toDataURL("image/png");
 
-      // 이미지 데이터를 서버로 전송
-      ///#region 이곳에서 imageDataUrl를 통해 캡쳐한 사진 데이터를 전송할 수 있습니다.
-      // 과거 소스코드
-      //   axios
-      //     .get("http://localhost:8000/api/medicine/")
-      //     .then((response) => {
-      //       setMedicines(response.data);
-      //     })
-      //     .catch((e) => console.error("Error accessing", e));
-      console.info(imageDataUrl);
-      // data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAoAAA .. 로시작하는 데이터가 console에 찍힙니다. -> F12에서 확인가능!
+      const dataUrlToBlob = (dataUrl: string) => {
+        const arr = dataUrl.split(",");
+        const mime = arr[0].match(/:(.*?);/);
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], { type: mime ? mime[1] : "png" });
+      };
+
+      const imageDataBlob = dataUrlToBlob(imageDataUrl);
+      const formData = new FormData();
+      formData.append("image", imageDataBlob, "capture.png");
+
       axios
-        .post("https://example.com/upload", { image: imageDataUrl })
+        .post("http://172.22.235.183:3636/api/medicine/", formData)
         .then((response) => {
-          console.log("Image uploaded successfully");
+          setMedicines(response.data);
         })
-        .catch((error) => {
-          console.error("Error uploading image:", error);
-        });
+        .catch((e) => console.error("접근 에러", e));
+
+      // // 이미지 데이터를 서버로 전송
+      // ///#region 이곳에서 imageDataUrl를 통해 캡쳐한 사진 데이터를 전송할 수 있습니다.
+      // // 과거 소스코드
+      // axios
+      //   .post("http://http://172.22.235.183:3636/api/medicine/", imageDataUrl)
+      //   .then((response) => {
+      //     setMedicines(response.data);
+      //   })
+      //   .catch((e) => console.error("Error accessing", e));
+      // console.info(imageDataUrl);
+      // data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAoAAA .. 로시작하는 데이터가 console에 찍힙니다. -> F12에서 확인가능!
       //#endregion
     };
 
@@ -128,10 +145,10 @@ function WebcamPage() {
         {/* <h2>웹캠화면</h2> */}
         <video ref={videoRef} autoPlay muted playsInline style={{ width: "100vw", height: "100vh" }} />
         {/* </div> */}
-        {/* <div>
-        <h2>5초마다 캡쳐 화면</h2>
-        <canvas ref={canvasRef} />
-      </div> */}
+        <div>
+          {/* <h2>5초마다 캡쳐 화면</h2> */}
+          <canvas ref={canvasRef} />
+        </div>
       </div>
       <div
         style={{
