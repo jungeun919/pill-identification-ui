@@ -7,6 +7,7 @@ import { uniqBy } from "lodash";
 let intervalId: any;
 let isPlay = false;
 let tempIndex = 0;
+const SERVER_URL = "http://10.100.154.24:3636";
 
 function WebcamPage() {
   // const [medicines, setMedicines] = useState([tempMedicine, ...tempList]);
@@ -46,7 +47,7 @@ function WebcamPage() {
       // #region 이곳에서 imageDataUrl를 통해 캡쳐한 사진 데이터를 전송할 수 있습니다.
       // data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAoAAA .. 로시작하는 데이터가 console에 찍힙니다. -> F12에서 확인가능!
       axios
-        .post(`http://10.100.154.24:3636/predict_medicine`, formData)
+        .post(`${SERVER_URL}/predict_medicine`, formData)
         .then((res) => {
           if (res && res.data && res.data.results)
             setMedicines((r) => checkList([...getMedicineList(res.data.results), ...r]));
