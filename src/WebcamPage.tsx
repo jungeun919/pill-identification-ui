@@ -8,6 +8,7 @@ let intervalId: any;
 let isPlay = false;
 let tempIndex = 0;
 const SERVER_URL = "http://10.100.154.24:3636";
+const LATENCY = 5000;
 
 function WebcamPage() {
   // const [medicines, setMedicines] = useState([tempMedicine, ...tempList]);
@@ -65,7 +66,7 @@ function WebcamPage() {
       intervalId = setInterval(() => {
         console.log("call");
         startCapture();
-      }, 5000); // 5초마다 캡쳐 및 전송
+      }, LATENCY); // 5초마다 캡쳐 및 전송
     };
 
     if (navigator && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && !isPlay) {
